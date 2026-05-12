@@ -100,14 +100,17 @@ func run(timeout time.Duration) error {
 
 	remaining := waitForDeletion(ctx, dynamicClient, crds, 180*time.Second)
 
-	if remaining > 0 {
+	if remaining != 0 {
 		fmt.Printf("\nWARNING: %d CR(s) stuck after 180s — removing finalizers.\n", remaining)
 		errors += stripFinalizers(ctx, dynamicClient, crds)
 
 		time.Sleep(10 * time.Second)
 
 		remaining = countAllCRs(ctx, dynamicClient, crds)
-		if remaining > 0 {
+		if remaining < 0 {
+			fmt.Fprintf(os.Stderr, "[ERROR] unable to determine remaining CR count after finalizer removal\n")
+			errors++
+		} else if remaining > 0 {
 			fmt.Fprintf(os.Stderr, "[ERROR] %d CR(s) still remain after finalizer removal\n", remaining)
 			errors++
 		} else {
