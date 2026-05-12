@@ -35,10 +35,11 @@ import (
 const apiGroup = "package-operator.run"
 
 type crdInfo struct {
-	Name   string
-	Plural string
-	Group  string
-	Scope  apiextensionsv1.ResourceScope
+	Name    string
+	Plural  string
+	Group   string
+	Version string
+	Scope   apiextensionsv1.ResourceScope
 }
 
 func main() {
@@ -46,6 +47,8 @@ func main() {
 	if v := os.Getenv("PKO_CLEANUP_TIMEOUT"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			timeout = d
+		} else {
+			fmt.Fprintf(os.Stderr, "[WARNING] failed to parse PKO_CLEANUP_TIMEOUT=%q: %v, using default %s\n", v, err, timeout)
 		}
 	}
 
@@ -134,10 +137,11 @@ func discoverPKOCRDs(ctx context.Context, client apiextensionsclient.Interface) 
 			continue
 		}
 		result = append(result, crdInfo{
-			Name:   crd.Name,
-			Plural: crd.Spec.Names.Plural,
-			Group:  crd.Spec.Group,
-			Scope:  crd.Spec.Scope,
+			Name:    crd.Name,
+			Plural:  crd.Spec.Names.Plural,
+			Group:   crd.Spec.Group,
+			Version: storageVersion(crd),
+			Scope:   crd.Spec.Scope,
 		})
 	}
 	return result, nil
@@ -147,11 +151,26 @@ func isPKOGroup(group string) bool {
 	return group == apiGroup || strings.HasSuffix(group, "."+apiGroup)
 }
 
+func storageVersion(crd apiextensionsv1.CustomResourceDefinition) string {
+	for _, v := range crd.Spec.Versions {
+		if v.Storage {
+			return v.Name
+		}
+	}
+	if len(crd.Spec.Versions) > 0 {
+		return crd.Spec.Versions[0].Name
+	}
+	return "v1alpha1"
+}
+
 func gvr(c crdInfo) schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: c.Group, Version: "v1alpha1", Resource: c.Plural}
+	return schema.GroupVersionResource{Group: c.Group, Version: c.Version, Resource: c.Plural}
 }
 
 func deleteCRs(ctx context.Context, client dynamic.Interface, crds []crdInfo, timeout time.Duration) int {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	errors := 0
 	for _, c := range crds {
 		resource := fmt.Sprintf("%s.%s", c.Plural, c.Group)
@@ -163,8 +182,6 @@ func deleteCRs(ctx context.Context, client dynamic.Interface, crds []crdInfo, ti
 		}
 
 		if c.Scope == apiextensionsv1.NamespaceScoped {
-			// The API server does not support cross-namespace DeleteCollection.
-			// List to find which namespaces contain CRs, then delete per namespace.
 			list, err := client.Resource(gvr(c)).Namespace("").List(ctx, metav1.ListOptions{})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "[ERROR] failed to list %s: %v\n", resource, err)
@@ -204,7 +221,7 @@ func countCRs(ctx context.Context, client dynamic.Interface, c crdInfo) int {
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] failed to list %s.%s: %v\n", c.Plural, c.Group, err)
-		return 0
+		return -1
 	}
 	return len(list.Items)
 }
@@ -212,7 +229,11 @@ func countCRs(ctx context.Context, client dynamic.Interface, c crdInfo) int {
 func countAllCRs(ctx context.Context, client dynamic.Interface, crds []crdInfo) int {
 	total := 0
 	for _, c := range crds {
-		total += countCRs(ctx, client, c)
+		n := countCRs(ctx, client, c)
+		if n < 0 {
+			return -1
+		}
+		total += n
 	}
 	return total
 }
@@ -227,14 +248,21 @@ func waitForDeletion(ctx context.Context, client dynamic.Interface, crds []crdIn
 			fmt.Println("All package-operator CRs have been deleted.")
 			return 0
 		}
-
-		elapsed := time.Since(deadline.Add(-maxWait)).Truncate(time.Second)
-		fmt.Printf("  %d CR(s) still remaining, waiting... (%s / %s)\n",
-			remaining, elapsed, maxWait)
+		if remaining < 0 {
+			fmt.Println("  Unable to determine CR count, retrying...")
+		} else {
+			elapsed := time.Since(deadline.Add(-maxWait)).Truncate(time.Second)
+			fmt.Printf("  %d CR(s) still remaining, waiting... (%s / %s)\n",
+				remaining, elapsed, maxWait)
+		}
 		time.Sleep(10 * time.Second)
 	}
 
-	return countAllCRs(ctx, client, crds)
+	remaining := countAllCRs(ctx, client, crds)
+	if remaining < 0 {
+		return 1
+	}
+	return remaining
 }
 
 func stripFinalizers(ctx context.Context, client dynamic.Interface, crds []crdInfo) int {
@@ -271,7 +299,7 @@ func stripFinalizers(ctx context.Context, client dynamic.Interface, crds []crdIn
 				fmt.Printf("  Patching finalizers on %s/%s\n", resource, name)
 				_, err = client.Resource(gvr(c)).Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 			}
-			if err != nil {
+			if err != nil && !apierrors.IsNotFound(err) {
 				fmt.Fprintf(os.Stderr, "[ERROR] failed to patch finalizers on %s/%s: %v\n", resource, name, err)
 				errors++
 			}
@@ -281,6 +309,9 @@ func stripFinalizers(ctx context.Context, client dynamic.Interface, crds []crdIn
 }
 
 func deleteCRDs(ctx context.Context, client apiextensionsclient.Interface, crds []crdInfo, timeout time.Duration) int {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	fmt.Println("\nRemoving package-operator.run CRDs...")
 
 	errors := 0
