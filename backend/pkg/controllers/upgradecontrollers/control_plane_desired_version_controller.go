@@ -468,7 +468,5 @@ func (c *controlPlaneDesiredVersionSyncer) selectBestVersionFromCandidates(
 		}
 	}
 
-	// Next minor channel exists but no candidate is a gateway yet.
-	// Return the latest candidate so the upgrade can proceed.
-	return &candidates[0], nil
+	return nil, nil
 }
