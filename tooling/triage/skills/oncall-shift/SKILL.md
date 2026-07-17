@@ -100,31 +100,47 @@ If the Slack link is not provided, record without it but flag:
 
 #### Step 2: Prioritize
 
-Apply the fixed priority order:
+The five categories below are **standing responsibilities every shift**.
+All five must appear in every action plan regardless of what the handover
+notes contain. Handover items, action items, PRs to babysit, and
+awareness items are slotted into whichever category they belong to — they
+do not form a separate list.
 
 1. **🔴 Rollouts** — Active rollouts, failed rollouts needing cancellation,
-   blocked rollouts.
+   blocked rollouts. Slot handover rollout items here.
 2. **🟠 Important / Time-Sensitive** — CCOA exceptions, approval chains,
-   PRs with deadlines, pipeline recoveries.
-3. **🟡 Dev Merge Queue** — Unblock Tide batches (see Dev Merge Queue
-   Monitoring section below).
-4. **🟡 Alerts** — Check monitoring alerts that might catch problems early.
-5. **🟢 Awareness / Routine** — Prow status, IcM portal, quality call,
-   handover dashboard, standard monitoring.
+   PRs with deadlines, pipeline recoveries. Slot handover action items,
+   PRs to babysit, and time-sensitive requests here.
+3. **🟡 Dev Merge Queue** — Check Tide batch health and unblock if needed
+   (see Dev Merge Queue Monitoring section below). Always present even if
+   handover does not mention it.
+4. **🟡 Alerts** — Check monitoring alerts for proactive problem detection.
+   Always present even if handover does not mention it.
+5. **🟢 Routine Monitoring** — IcM portal sweep, oncall dashboard ticket
+   triage, Prow status, quality call, handover dashboard. Slot handover
+   awareness items and incidents here. Always present even if handover
+   does not mention it.
 
-Present as a numbered action sequence (not just categories):
+If the handover notes contain items that already match a standing
+category (e.g. an IcM incident is routine monitoring, a PR deadline is
+important/time-sensitive), place them in that category rather than
+creating duplicates.
+
+Present as a numbered action sequence (not just categories). Every
+category must have at least one concrete action, even if it is the
+standing default:
 
 ```
 ### Suggested Sequence
 
-1. <Most urgent rollout action>
+1. <Most urgent rollout action or "No active rollouts — verify none pending">
 2. <Next rollout action>
-3. <Time-sensitive item>
-4. Check Dev merge queue health
-5. <Check alerts>
+3. <Time-sensitive item or "No time-sensitive items">
+4. Check Dev merge queue health (CI Health Dashboard)
+5. Check monitoring alerts
 6. <Verify pipeline/automation>
 7. <Babysit PR>
-8. Routine monitoring (Prow, IcM, dashboard)
+8. Routine monitoring: IcM portal sweep, oncall dashboard triage, Prow status
 ```
 
 #### Step 3: Create Tracking JIRA
