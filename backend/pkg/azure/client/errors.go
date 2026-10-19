@@ -16,6 +16,7 @@ package client
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 )
@@ -33,6 +34,13 @@ func IsResourceGroupNotFoundErr(err error) bool {
 func IsResourceNotFoundErr(err error) bool {
 	var azErr *azcore.ResponseError
 	return errors.As(err, &azErr) && azErr.ErrorCode == "ResourceNotFound"
+}
+
+// IsForbiddenErr reports whether an Azure API call was rejected because the caller is not
+// authorized to perform it.
+func IsForbiddenErr(err error) bool {
+	var azErr *azcore.ResponseError
+	return errors.As(err, &azErr) && azErr.StatusCode == http.StatusForbidden
 }
 
 // IsRoleAssignmentNotFoundErr is used to determine if we are failing to find a role assignment
