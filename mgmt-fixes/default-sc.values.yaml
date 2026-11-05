@@ -1,2 +1,2 @@
-unannotateJobImage: "{{ .aksCommandRuntime.image.registry }}/{{ .aksCommandRuntime.image.repository }}@{{ .aksCommandRuntime.image.digest }}"
+unannotateJobImage: "{{ .toolbox.image.registry }}/{{ .toolbox.image.repository }}@{{ .toolbox.image.digest }}"
 skuName: "{{ .mgmt.defaultStorageClassSkuName }}"

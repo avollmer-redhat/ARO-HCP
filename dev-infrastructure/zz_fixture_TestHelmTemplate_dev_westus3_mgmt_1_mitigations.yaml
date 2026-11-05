@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: patcher
-        image: "mcr.microsoft.com/aks/command/runtime@sha256:1234567890"
+        image: "arohcpsvcdev.azurecr.io/toolbox@sha256:1234567890"
         resources:
           requests:
             cpu: 10m
@@ -77,7 +77,7 @@ spec:
           limits:
             memory: 128Mi
         # /bin/bash: the ERR trap and $LINENO are not POSIX; the
-        # aks/command/runtime image ships bash (velero's install job
+        # first-party toolbox image ships bash (velero's install job
         # already relies on it).
         command:
         - /bin/bash

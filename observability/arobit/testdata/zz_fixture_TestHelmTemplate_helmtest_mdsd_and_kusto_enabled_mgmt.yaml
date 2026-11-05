@@ -1317,7 +1317,7 @@ spec:
           # within the bounded window, asks the K8s API to delete this pod so
           # the DaemonSet recreates it. The namespace-scoped Role grants only
           # pods:delete (see forwarder-watchdog-rbac.yaml).
-          image: mcr.microsoft.com/aks/command/runtime@sha256:1234567890
+          image: arohcpsvcdev.azurecr.io/toolbox@sha256:1234567890
           imagePullPolicy: 'IfNotPresent'
           command:
             - /bin/sh

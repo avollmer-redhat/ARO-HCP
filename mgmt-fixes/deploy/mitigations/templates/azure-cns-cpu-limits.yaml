@@ -72,7 +72,7 @@ spec:
           limits:
             memory: 128Mi
         # /bin/bash: the ERR trap and $LINENO are not POSIX; the
-        # aks/command/runtime image ships bash (velero's install job
+        # first-party toolbox image ships bash (velero's install job
         # already relies on it).
         command:
         - /bin/bash

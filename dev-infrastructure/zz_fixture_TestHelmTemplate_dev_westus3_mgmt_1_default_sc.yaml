@@ -97,7 +97,7 @@ spec:
             echo "StorageClass skuname mismatch: current=$CURRENT_SKU desired=$DESIRED_SKU, deleting"
             kubectl delete storageclass managed-csi-premiumv2
           fi
-        image: "mcr.microsoft.com/aks/command/runtime@sha256:1234567890"
+        image: "arohcpsvcdev.azurecr.io/toolbox@sha256:1234567890"
         name: delete-sc
       restartPolicy: OnFailure
       serviceAccountName: annotator
@@ -127,7 +127,7 @@ spec:
         - -c
         - |
           kubectl annotate storageclass default storageclass.kubernetes.io/is-default-class=false --overwrite
-        image: "mcr.microsoft.com/aks/command/runtime@sha256:1234567890"
+        image: "arohcpsvcdev.azurecr.io/toolbox@sha256:1234567890"
         name: finalize
       restartPolicy: OnFailure
       serviceAccountName: annotator

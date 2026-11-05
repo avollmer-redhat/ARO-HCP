@@ -65,9 +65,9 @@ forwarder:
   ## never mounts. See AROSLSRE-879 and forwarder-watchdog-rbac.yaml.
   watchdog:
     image:
-      registry: "{{ .aksCommandRuntime.image.registry }}"
-      repository: "{{ .aksCommandRuntime.image.repository }}"
-      digest: "{{ .aksCommandRuntime.image.digest }}"
+      registry: "{{ .toolbox.image.registry }}"
+      repository: "{{ .toolbox.image.repository }}"
+      digest: "{{ .toolbox.image.digest }}"
       pullPolicy: IfNotPresent
     timeoutSeconds: 300
     intervalSeconds: 15
